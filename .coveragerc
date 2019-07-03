@@ -1,0 +1,11 @@
+[run]
+source = rs_import
+
+[report]
+exclude_lines =
+    def __repr__
+    if TYPE_CHECKING:
+    pass
+    pragma: no cover
+    raise NotImplementedError
+fail_under = 96
