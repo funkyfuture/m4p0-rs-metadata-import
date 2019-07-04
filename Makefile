@@ -17,7 +17,7 @@ black: ## normalize Python code
 
 .PHONY: flake8
 flake8: ## code linting with flake8
-	flake8 rs_import tests setup.py
+	flake8 --max-line-length=89 rs_import tests setup.py
 
 .PHONY: help
 help:
