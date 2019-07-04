@@ -67,7 +67,7 @@ def parse_cli_args(args: List[str] = sys.argv[1:]) -> Namespace:
     )
     parser.add_argument(
         "import_folder",
-        action="append",
+        nargs="+",
         metavar="IMPORT_PATH",
         help="The folder(s) containing the import data.",
     )
