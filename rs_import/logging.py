@@ -15,7 +15,7 @@ log.setLevel(DEBUG)
 log.addHandler(console_handler)
 
 
-def set_file_handler(log_path: Path):
+def set_file_log_handler(log_path: Path):
     global file_handler
 
     if file_handler is not None:
@@ -34,6 +34,6 @@ __all__ = (
     "DEBUG",
     "INFO",
     "log",
-    set_file_handler.__name__,
+    set_file_log_handler.__name__,
     set_console_log_level.__name__,
 )
