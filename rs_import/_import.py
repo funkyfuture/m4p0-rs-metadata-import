@@ -1,13 +1,41 @@
+import uuid
 from contextlib import AbstractContextManager
 from datetime import datetime
 from pathlib import Path
+from pprint import pformat
 from types import SimpleNamespace
-from typing import Dict
+from typing import Dict, Optional
 
 import yaml
-from rdflib import Graph  # type: ignore
+from cerberus import Validator  # type: ignore
+from rdflib import Graph, Literal, Namespace, URIRef  # type: ignore
+from rdflib.namespace import DC, RDF, RDFS  # type: ignore
 
 from rs_import.logging import log, set_file_log_handler
+
+
+# TODO make that configurable
+OBJECTS_NAMESPACE = "https://enter.museum4punkt0.de/resource/"
+
+URL_PATTERN = "^https?://.*"
+
+
+# URI namespaces
+
+edm = Namespace("http://www.europeana.eu/schemas/edm/")
+m4p0 = Namespace("https://enter.museum4punkt0.de/ontology/")
+
+
+# validation schemas
+
+dataset_description_schema = {
+    "file_namespace": {"type": "string", "required": True, "regex": URL_PATTERN + "/$"},
+    "data_provider": {"type": "string", "required": True, "regex": URL_PATTERN},
+    "digital_app": {"type": "string", "regex": URL_PATTERN},
+}
+
+
+validator = Validator()
 
 
 class NamedGraphBackup(AbstractContextManager):
@@ -27,7 +55,8 @@ class NamedGraphBackup(AbstractContextManager):
 class DataSetImport:
     def __init__(self, path: Path, config: SimpleNamespace):
         self.config = config
-        self.import_time = datetime.now().isoformat(timespec="seconds")
+        self.import_time = datetime.now()
+        self.import_time_string = self.import_time.isoformat(timespec="seconds")
 
         log_folder = path / "logs"
         try:
@@ -35,7 +64,7 @@ class DataSetImport:
         except FileNotFoundError:
             log.error(f"The import folder '{path}' doesn't exist. Aborting.")
             raise SystemExit(1)
-        set_file_log_handler(log_folder / f"{self.import_time}.log")
+        set_file_log_handler(log_folder / f"{self.import_time_string}.log")
 
         log.info(f"Setting up import from {path}")
 
@@ -46,68 +75,86 @@ class DataSetImport:
         for name in ("images", "audio_video", "3d", "entities"):
             if (path / f"{name}.csv").exists():
                 self.source_files[name] = path / f"{name}.csv"
-        if tuple(self.source_files) == ("entities",):
+        if not any(x in self.source_files for x in ("images", "audio_video", "3d")):
             log.error(
                 "At least one of 'images.csv', 'audio_video.csv' or '3d.csv' "
                 "must be present in an import folder."
             )
+            raise SystemExit(1)
 
-        self.graph = Graph()  # TODO add identifier
+        self.graph: Optional[Graph] = None
 
     def run(self):
-        self.process_dataset_description()
-
         # generate triples from the various sources
+        self.process_dataset_description()
         self.process_images_data()
         self.process_audio_video_data()
         self.process_3d_data()
         self.process_entities_data()
 
+        self.submit()
+
+    def submit(self):
         # submit the triples to the SPARQL-endpoint
-        self.generate_graph()
         with NamedGraphBackup():
-            self.submit_graph()
+            log.info("# Submitting graph data via SPARQL.")
+            raise NotImplementedError
 
     # input data processing
 
     def process_dataset_description(self):
         log.info("# Processing dataset description.")
-        raise NotImplementedError
+        input_data = self.dataset_description
+
+        log.debug(f"Input data: {input_data}")
+        if not validator(input_data, schema=dataset_description_schema):
+            log.error(
+                "The dataset description document did not validate. These errors were "
+                "reported:"
+            )
+            log.error(pformat(validator.errors))
+            raise SystemExit(1)
+        log.debug("Input data validated.")
+
+        file_namespace = input_data["file_namespace"]
+
+        # initialize graph
+        graph_uuid = uuid.uuid5(uuid.NAMESPACE_URL, file_namespace)
+        graph_iri = f"{OBJECTS_NAMESPACE}{graph_uuid}"
+        graph = self.graph = Graph(identifier=graph_iri)
+
+        # describe graph
+        s = URIRef(graph_iri)
+        for p, o in [
+            (RDF.type, m4p0.RDFGraph),
+            (RDFS.label, Literal(f"{file_namespace} @ {self.import_time_string}")),
+            (edm.dataProvider, URIRef(input_data["data_provider"])),
+            (DC.date, Literal(self.import_time)),
+        ]:
+            graph.add((s, p, o))
+
+        # TODO mind the 'digital_app' at a later stage
 
     def process_images_data(self):
         if self.source_files.get("images") is None:
             log.debug("No images' metadata found.")
             return
         log.info("# Processing images' metadata.")
-        raise NotImplementedError
 
     def process_audio_video_data(self):
         if self.source_files.get("audio_video") is None:
             log.debug("No audios' metadata found.")
             return
         log.info("# Processing audios' metadata")
-        raise NotImplementedError
 
     def process_3d_data(self):
         if self.source_files.get("3d") is None:
-            log.debug("Not 3D objects' metadata found.")
+            log.debug("No 3D objects' metadata found.")
             return
         log.info("# Processing 3D objects' metadata.")
-        raise NotImplementedError
 
     def process_entities_data(self):
         if self.source_files.get("objects") is None:
             log.debug("No entities' metadata found.")
             return
         log.info("# Processing entities' metadata.")
-        raise NotImplementedError
-
-    # data ingestion
-
-    def generate_graph(self):
-        log.info("# Generating graph data.")
-        raise NotImplementedError
-
-    def submit_graph(self):
-        log.info("# Submitting graph data via SPARQL.")
-        raise NotImplementedError

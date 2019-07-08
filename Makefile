@@ -15,6 +15,10 @@ export PRINT_HELP_PYSCRIPT
 black: ## normalize Python code
 	black rs_import tests setup.py
 
+.PHONY: clean
+clean: ## cleans developments artifacts
+	rm tests/data/*/logs/*
+
 .PHONY: flake8
 flake8: ## code linting with flake8
 	flake8 --max-line-length=89 rs_import tests setup.py

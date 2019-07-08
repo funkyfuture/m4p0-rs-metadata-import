@@ -110,7 +110,7 @@ nicht existieren, bzw. ergänzt:
 ```turtle
 {graph_iri}
     a m4p0:RDFGraph ;
-    rdf:label "{file_namespace} / {import_time}" ;
+    rdf:label "{file_namespace} @ {import_time}" ;
     edm:dataProvider <{data_provider}> ;
     dc:date "{import_time}"^^xsd:dateTime .
 ```
