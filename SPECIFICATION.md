@@ -19,7 +19,7 @@ Die Ausdrücke zu derivierten Werten können die Funktion `uuid()` zur Bildung
 deterministischer UUID aus den in den Klammern angegebenen Eingabewerten
 enthalten.
 
-In den Datensets werden im Grundatz Freitextangaben erwartet.
+In den Datensets werden im Grundsatz Freitextangaben erwartet.
 
 
 ## Roadmap
@@ -254,17 +254,15 @@ Je Zeile werden folgende Tripel erzeugt:
 GRAPH {graph_iri} {
   <{Bezugsentität_iri}>
     a m4p0:MuseumObject ;
-     m4p0:museumObjectTitle "{Bezeichnung}".
+    m4p0:museumObjectTitle "{Bezeichnung}".
 
     # jeweils optional:
-     edm:isShownAt "{URL}";
-    # TODO ein DataProperty, das das arbriträre JSON enthalten kann
-    # -> https://github.com/funkyfuture/m4p0-rs-metadata-import/issues/6
-     m4p0:isDescribedBy _:json .
-}
-{
-     _:json
-     a m4p0:JSONObject;
-     m4p0:jsonData "{json_string}" .
+    edm:isShownAt "{URL}";
+    m4p0:isDescribedBy _:json .
+
+  # nur wenn voriges Tripel existiert
+  _:json  
+    a m4p0:JSONObject;
+    m4p0:jsonData "{json_string}" .
 }
 ```
