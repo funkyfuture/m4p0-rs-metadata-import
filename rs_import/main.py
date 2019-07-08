@@ -6,7 +6,7 @@ from rs_import.logging import log, set_console_log_level
 
 def main():  # pragma: no cover
     try:
-        config = generate_config()
+        import_folders, config = generate_config()
         set_console_log_level(config.verbosity)
 
         exit_code = 0

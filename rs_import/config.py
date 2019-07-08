@@ -3,7 +3,7 @@ from argparse import ArgumentParser, Namespace
 from pathlib import Path
 from pprint import pprint
 from types import SimpleNamespace
-from typing import List
+from typing import List, Tuple
 
 import yaml
 from cerberus import TypeDefinition, Validator  # type: ignore
@@ -11,12 +11,12 @@ from cerberus import TypeDefinition, Validator  # type: ignore
 from rs_import import logging
 
 
-class ConfigValidator(Validator):
+class ImportSpecValidator(Validator):
     types_mapping = Validator.types_mapping.copy()
     types_mapping["path"] = TypeDefinition("path", (Path,), ())
 
 
-config_validator = ConfigValidator(
+import_spec_validator = ImportSpecValidator(
     schema={
         "import_folders": {"type": "list", "schema": {"coerce": Path, "type": "path"}},
         "sparql_endpoint": {"type": "string", "regex": "^https://.*"},
@@ -25,25 +25,29 @@ config_validator = ConfigValidator(
 )
 
 
-def generate_config() -> SimpleNamespace:
+def generate_config() -> Tuple[List[Path], SimpleNamespace]:
     cli_args = parse_cli_args()
 
     config_file_path = Path(cli_args.config).expanduser().resolve()
     with config_file_path.open("rt") as f:
         config_contents = yaml.load(f, Loader=yaml.SafeLoader)
 
-    config_data = {
+    import_spec = {
         "import_folders": cli_args.import_folder,
         "verbosity": [logging.INFO, logging.DEBUG][cli_args.verbose],
         **config_contents,
     }
 
-    if not config_validator.validate(config_data):
+    import_spec = import_spec_validator.validated(import_spec)
+
+    if import_spec is None:
         print("The configuration data did not validate. These errors were reported:")
-        pprint(config_validator.errors)
+        pprint(import_spec_validator.errors)
         raise SystemExit(1)
 
-    return SimpleNamespace(**config_validator.document)
+    import_folders = import_spec.pop("import_folders")
+
+    return import_folders, SimpleNamespace(**import_spec_validator.document)
 
 
 def parse_cli_args(args: List[str] = sys.argv[1:]) -> Namespace:
