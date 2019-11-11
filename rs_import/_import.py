@@ -17,7 +17,7 @@ from rs_import.logging import log, set_file_log_handler
 # TODO make that configurable
 OBJECTS_NAMESPACE = "https://enter.museum4punkt0.de/resource/"
 
-URL_PATTERN = "^https?://.*"
+WEB_URL_PATTERN = "^https?://.*"
 
 
 # URI namespaces
@@ -29,9 +29,13 @@ m4p0 = Namespace("https://enter.museum4punkt0.de/ontology/")
 # validation schemas
 
 dataset_description_schema = {
-    "file_namespace": {"type": "string", "required": True, "regex": URL_PATTERN + "/$"},
-    "data_provider": {"type": "string", "required": True, "regex": URL_PATTERN},
-    "digital_app": {"type": "string", "regex": URL_PATTERN},
+    "file_namespace": {
+        "type": "string",
+        "required": True,
+        "regex": WEB_URL_PATTERN + "/$",
+    },
+    "data_provider": {"type": "string", "required": True, "regex": WEB_URL_PATTERN},
+    "digital_app": {"type": "string", "regex": WEB_URL_PATTERN},
 }
 
 
@@ -54,6 +58,8 @@ class NamedGraphBackup(AbstractContextManager):
 
 class DataSetImport:
     def __init__(self, path: Path, config: SimpleNamespace):
+        log.info(f"Setting up import from {path}")
+
         self.config = config
         self.import_time = datetime.now()
         self.import_time_string = self.import_time.isoformat(timespec="seconds")
@@ -66,15 +72,15 @@ class DataSetImport:
             raise SystemExit(1)
         set_file_log_handler(log_folder / f"{self.import_time_string}.log")
 
-        log.info(f"Setting up import from {path}")
-
-        with (path / "dataset.yml").open("rt") as f:
-            self.dataset_description = yaml.load(f, Loader=yaml.SafeLoader)
+        self.dataset_description = yaml.load(
+            (path / "dataset.yml").read_text(), Loader=yaml.SafeLoader
+        )
 
         self.source_files: Dict[str, Path] = {}
         for name in ("images", "audio_video", "3d", "entities"):
-            if (path / f"{name}.csv").exists():
-                self.source_files[name] = path / f"{name}.csv"
+            data_file_path = path / f"{name}.csv"
+            if data_file_path.exists():
+                self.source_files[name] = data_file_path
         if not any(x in self.source_files for x in ("images", "audio_video", "3d")):
             log.error(
                 "At least one of 'images.csv', 'audio_video.csv' or '3d.csv' "

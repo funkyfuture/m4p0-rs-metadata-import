@@ -32,13 +32,13 @@ def generate_config() -> Tuple[List[Path], SimpleNamespace]:
     with config_file_path.open("rt") as f:
         config_contents = yaml.load(f, Loader=yaml.SafeLoader)
 
-    import_spec = {
-        "import_folders": cli_args.import_folder,
-        "verbosity": [logging.INFO, logging.DEBUG][cli_args.verbose],
-        **config_contents,
-    }
-
-    import_spec = import_spec_validator.validated(import_spec)
+    import_spec = import_spec_validator.validated(
+        {
+            **config_contents,
+            "import_folders": cli_args.import_folder,
+            "verbosity": [logging.INFO, logging.DEBUG][cli_args.verbose],
+        }
+    )
 
     if import_spec is None:
         print("The configuration data did not validate. These errors were reported:")

@@ -13,6 +13,8 @@ def test_valid_dataset(test_config, test_data):
         test_data / "valid_dataset_description", test_config
     ).run()
 
+    assert len(result) == 4
+
     graph_iri = result.value(
         predicate=RDF.type,
         object=URIRef("https://enter.museum4punkt0.de/ontology/RDFGraph"),
