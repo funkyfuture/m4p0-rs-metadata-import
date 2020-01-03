@@ -190,7 +190,17 @@ class DataSetImport:
         ]:
             graph.add((s, p, o))
 
-        # TODO mind the 'digital_app' at a later stage
+        digital_app = input_data.get("digital_app")
+        if digital_app is not None:
+            digital_app = URIRef(digital_app)
+            digital_app_creation = self.digital_app_creation = URIRef(
+                f"{digital_app}#creation"
+            )
+
+            graph.add((digital_app, RDF.type, m4p0.DigitalApp))
+            graph.add((digital_app_creation, RDF.type, crm.E65_Creation))
+
+            graph.add((digital_app_creation, m4p0.hasCreatedDigitalApp, digital_app))
 
     def process_images_data(self):
         if self.source_files.get("images") is None:
@@ -198,6 +208,7 @@ class DataSetImport:
             return
         log.info("# Processing images' metadata.")
 
+        creation_iris = set()
         creation_uuid_ns = uuid.uuid5(uuid.NAMESPACE_URL, self.file_namespace)
         encountered_filenames = set()
         graph = self.graph
@@ -236,8 +247,12 @@ class DataSetImport:
                 media_type = self.config.media_types[Path(filename).suffix[1:]]
                 creation_uuid = uuid.uuid5(creation_uuid_ns, media_type)
                 creation_iri = URIRef(f"{OBJECTS_NAMESPACE}{creation_uuid}")
-
-                # TODO collect creation_iris and generate triples about them
+                creation_iris.add(
+                    (
+                        creation_iri,
+                        f"{self.data_provider} / {self.file_namespace} / {media_type}",
+                    )
+                )
 
                 for p, o in [
                     (RDF.type, crmdig["D1.Digital_Object"]),
@@ -270,6 +285,18 @@ class DataSetImport:
                             Literal(object_data["url"], datatype=XSD.anyURI),
                         )
                     )
+
+        for creation_iri, label in creation_iris:
+            graph.add((creation_iri, RDF.type, crm.E65_Creation))
+            graph.add((creation_iri, RDFS.label, Literal(label)))
+            if self.digital_app_creation is not None:
+                graph.add(
+                    (
+                        creation_iri,
+                        m4p0.fallsWithinAppCreation,
+                        self.digital_app_creation,
+                    )
+                )
 
     def process_audio_video_data(self):
         if self.source_files.get("audio_video") is None:

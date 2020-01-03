@@ -22,4 +22,4 @@ def test_imagset(test_config, test_data):
         for o in result.objects(predicate=m4p0.hasMediaType)
     )
 
-    assert len(result) == 4 + 18 * 7
+    assert len(result) == 6 + 18 * 7
