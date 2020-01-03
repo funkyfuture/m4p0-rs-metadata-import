@@ -6,7 +6,12 @@ from pytest import fixture
 
 @fixture()
 def test_config():
-    yield SimpleNamespace()
+    yield SimpleNamespace(
+        media_types={
+            "tif": "https://www.iana.org/assignments/media-types/image/tiff",
+            "tiff": "https://www.iana.org/assignments/media-types/image/tiff",
+        }
+    )
 
 
 @fixture(scope="session")

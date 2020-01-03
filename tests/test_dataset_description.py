@@ -32,7 +32,7 @@ def test_valid_dataset(test_config, test_data):
     )
     assert (
         str(result.value(subject=graph_iri, predicate=edm.dataProvider))
-        == "https://enter.museum4punkt0.de/resource/institution_1"
+        == "https://example.org/"
     )
 
 

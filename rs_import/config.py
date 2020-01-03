@@ -9,6 +9,7 @@ import yaml
 from cerberus import TypeDefinition, Validator  # type: ignore
 
 from rs_import import logging
+from rs_import.constants import WEB_URL_PATTERN
 
 
 class ImportSpecValidator(Validator):
@@ -19,7 +20,12 @@ class ImportSpecValidator(Validator):
 import_spec_validator = ImportSpecValidator(
     schema={
         "import_folders": {"type": "list", "schema": {"coerce": Path, "type": "path"}},
-        "sparql_endpoint": {"type": "string", "regex": "^https://.*"},
+        "media_types": {
+            "type": "dict",
+            "keysrules": {"type": "string", "regex": "[a-z0-9]+"},
+            "valuesrules": {"type": "string", "regex": WEB_URL_PATTERN},
+        },
+        "sparql_endpoint": {"type": "string", "regex": WEB_URL_PATTERN},
         "verbosity": {"type": "integer", "allowed": (logging.DEBUG, logging.INFO)},
     }
 )
