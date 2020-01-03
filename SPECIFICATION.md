@@ -153,7 +153,8 @@ Das Set für Medientyp *_3D_* enthält über das Kernset hinaus:
 
 Derivierte Werte:
 
-- `Bezugsentität_iri` <- `uuid({graph_uuid} + {Bezugsentität})`
+- `Bezugsentität_uuid` <- `uuid({graph_uuid} + {Bezugsentität})`
+- `Bezugsentität_iri` <- `https://enter.museum4punkt0.de/resource/{Bezugsentität_uuid}`
 - `data_object_iri` <- `"{file_namespace}/{Dateiname}"`
   - beim Import wird per `HEAD`-Request geprüft, ob unter der IRI eine
     Resource verfügbar ist
