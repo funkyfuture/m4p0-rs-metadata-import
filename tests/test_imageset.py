@@ -1,3 +1,5 @@
+import json
+
 from rdflib import Namespace, URIRef
 from rdflib.namespace import RDF
 
@@ -8,7 +10,7 @@ crmdig = Namespace("http://www.ics.forth.gr/isl/rdfs/3D-COFORM_CRMdig.rdfs#")
 m4p0 = Namespace("https://enter.museum4punkt0.de/ontology/")
 
 
-def test_imagset(test_config, test_data):
+def test_imagset_and_entities(test_config, test_data):
     result = _TestDataSetImport(test_data / "valid_imageset", test_config).run()
 
     digital_objects = list(result.subjects(RDF.type, crmdig["D1.Digital_Object"]))
@@ -22,4 +24,8 @@ def test_imagset(test_config, test_data):
         for o in result.objects(predicate=m4p0.hasMediaType)
     )
 
-    assert len(result) == 6 + 18 * 7
+    assert all(
+        isinstance(json.loads(x), dict) for x in result.objects(None, m4p0.jsonData)
+    )
+
+    assert len(result) == 6 + 18 * 7 + 12 * 5

@@ -1,4 +1,5 @@
 import csv
+import json
 import uuid
 from contextlib import AbstractContextManager
 from datetime import datetime
@@ -10,7 +11,7 @@ from urllib.parse import quote as url_quote
 
 import yaml
 from cerberus import Validator  # type: ignore
-from rdflib import Graph, Literal, Namespace, URIRef  # type: ignore
+from rdflib import BNode, Graph, Literal, Namespace, URIRef  # type: ignore
 from rdflib.namespace import RDF, RDFS, XSD  # type: ignore
 
 from rs_import.logging import log, set_file_log_handler
@@ -72,7 +73,7 @@ coreset_description_schema = {
         + ["https://creativecommons.org/publicdomain/"],
     },
     "Lizenzgeber": {"type": "string"},
-    "Bezugsentität": {"type": "string"},
+    "Bezugsentität": {"type": "string", "empty": False},
     "URL": {"type": "string", "regex": WEB_URL_PATTERN},
 }
 
@@ -86,9 +87,17 @@ _3d_description_schema = {
     # TODO
 }
 
+entity_description_schema = {
+    "Identifier": {"type": "string", "required": True, "empty": False},
+    "Bezeichnung": {"type": "string", "required": True, "empty": False},
+    "URL": {"type": "string", "regex": WEB_URL_PATTERN},
+}
 
 dataset_description_validator = Validator(dataset_description_schema)
 coreset_validator = Validator(coreset_description_schema)
+entity_validator = Validator(
+    entity_description_schema, allow_unknown={"type": "string"}
+)
 
 
 class NamedGraphBackup(AbstractContextManager):
@@ -272,10 +281,15 @@ class DataSetImport:
                     raise AssertionError
 
                 if "Bezugsentität" in object_data:
-                    related_iri = OBJECTS_NAMESPACE + str(
-                        uuid.uuid5(self.graph_uuid, object_data["Bezugsentität"])
+                    graph.add(
+                        (
+                            s,
+                            m4p0.refersToMuseumObject,
+                            self.create_related_entity_iri(
+                                object_data["Bezugsentität"]
+                            ),
+                        )
                     )
-                    graph.add((s, m4p0.refersToMuseumObject, URIRef(related_iri)))
 
                 if "URL" in object_data:
                     graph.add(
@@ -298,6 +312,8 @@ class DataSetImport:
                     )
                 )
 
+        log.info("Done.")
+
     def process_audio_video_data(self):
         if self.source_files.get("audio_video") is None:
             log.debug("No audios' metadata found.")
@@ -311,7 +327,58 @@ class DataSetImport:
         log.info("# Processing 3D objects' metadata.")
 
     def process_entities_data(self):
-        if self.source_files.get("objects") is None:
+        if self.source_files.get("entities") is None:
             log.debug("No entities' metadata found.")
             return
         log.info("# Processing entities' metadata.")
+
+        graph = self.graph
+
+        with self.source_files["entities"].open("rt", newline="") as f:
+            csv_reader = csv.DictReader(f)
+            for row in csv_reader:
+
+                identifier = row.get("Identifier")
+
+                if not entity_validator(row):
+                    log.error(
+                        "An entity description did not validate. These errors "
+                        f"were reported for the identifier {identifier}:"
+                    )
+                    log.error(pformat(entity_validator.errors))
+                    raise SystemExit(1)
+
+                s = self.create_related_entity_iri(identifier)
+
+                if len(set(graph.triples((None, m4p0.refersToMuseumObject, s)))) < 1:
+                    log.error(
+                        "This identifier is not referenced in the metadata of any "
+                        f"digital object in the created graph: {identifier}"
+                    )
+                    raise SystemExit(1)
+
+                graph.add((s, RDF.type, m4p0.MuseumObject))
+                graph.add((s, m4p0.MuseumObjectTtile, Literal(row["Bezeichnung"])))
+
+                if "URL" in row:
+                    graph.add((s, edm.isShownAt, URIRef(row["URL"])))
+
+                arbritrary_fields = {
+                    k: v for k, v in row.items() if k not in entity_description_schema
+                }
+                if arbritrary_fields:
+                    blank_node = BNode()
+                    graph.add((blank_node, RDF.type, m4p0.JSONObject))
+                    graph.add(
+                        (
+                            blank_node,
+                            m4p0.jsonData,
+                            Literal(json.dumps(arbritrary_fields)),
+                        )
+                    )
+                    graph.add((s, m4p0.isDescribedBy, blank_node))
+
+        log.info("Done.")
+
+    def create_related_entity_iri(self, identifier: str) -> URIRef:
+        return URIRef(OBJECTS_NAMESPACE + str(uuid.uuid5(self.graph_uuid, identifier)))

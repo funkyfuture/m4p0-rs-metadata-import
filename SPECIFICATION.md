@@ -232,12 +232,12 @@ GRAPH {graph_iri} {
 Diese Tabelle dient zur Erstellung von `m4p0:MuseumObject`-Instanzen und
 beihaltet mindestens folgende Spalten:
 
-- `identifier` (obligatorisch)
+- `Identifier` (obligatorisch)
   - hier werden Werte entsprechend `Bezugsentität` der Dateimetadaten-Tabelle
     erwartet
 - `Bezeichnung` (obligatorisch)
 - `URL` (optional)
-  - muss den regülären Ausdruck `https?://.*` matchen
+  - muss den regülären Ausdruck `https?://.+` matchen
 
 Alle weiteren Spalten sind fakultativ und werden als serialisiertes JSON in
 einem noch zu definierenden Property hinterlegt. Diese Spalten werden als
