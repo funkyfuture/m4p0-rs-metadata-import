@@ -415,7 +415,7 @@ class DataSetImport:
                     raise SystemExit(1)
 
                 graph.add((s, RDF.type, m4p0.MuseumObject))
-                graph.add((s, m4p0.MuseumObjectTitle, Literal(row["Bezeichnung"])))
+                graph.add((s, m4p0.museumObjectTitle, Literal(row["Bezeichnung"])))
 
                 if "URL" in row:
                     graph.add((s, edm.isShownAt, URIRef(row["URL"])))
