@@ -9,6 +9,7 @@ from types import SimpleNamespace
 from typing import Dict, Optional
 from urllib.parse import quote as url_quote
 
+import httpx
 import yaml
 from cerberus import Validator  # type: ignore
 from rdflib import BNode, Graph, Literal, Namespace, URIRef  # type: ignore
@@ -16,10 +17,6 @@ from rdflib.namespace import RDF, RDFS, XSD  # type: ignore
 
 from rs_import.logging import log, set_file_log_handler
 from rs_import.constants import WEB_URL_PATTERN
-
-
-# TODO make that configurable
-OBJECTS_NAMESPACE = "https://enter.museum4punkt0.de/resource/"
 
 
 # URI namespaces
@@ -161,9 +158,68 @@ class DataSetImport:
 
     def submit(self):
         # submit the triples to the SPARQL-endpoint
-        with NamedGraphBackup():
-            log.info("# Submitting graph data via SPARQL.")
-            raise NotImplementedError
+
+        log.info("# Submitting graph data via SPARQL.")
+
+        graph_iri = self.graph.identifier
+
+        turtle_representation: str = self.graph.serialize(
+            format="turtle").decode().splitlines()
+
+        deletion_query = f"""\
+        DELETE {{?s ?p ?o}}
+        WHERE {{ GRAPH <{graph_iri}> {{?s ?p ?o}} }}
+        """
+
+        prefixes = []
+        for i, line in enumerate(turtle_representation):
+            if line.startswith("@prefix "):
+                prefixes.append("PREFIX " + line[8:-2])
+            else:
+                break
+
+        prefixes_header = "\n".join(prefixes) + "\n"
+        statements = "\n".join(turtle_representation[i+1:])
+
+        insert_query = f"""\
+        {prefixes_header}
+
+        INSERT {{
+          GRAPH <{graph_iri}> {{
+            {statements}
+          }}
+        }} WHERE {{}}
+        """
+
+        log.debug("Generated SPARQL Query:")
+        log.debug(insert_query)
+
+        log.info(f"Deleting all existing triples from the graph <{graph_iri}>.")
+        self.post_query(deletion_query)
+
+        log.info(
+            f"Posting generated triples to {self.config.sparql_endpoint} as "
+            f"{self.config.sparql_user}."
+        )
+        self.post_query(insert_query)
+
+    def post_query(self, query: str):
+        response = httpx.post(
+            self.config.sparql_endpoint,
+            auth=(self.config.sparql_user, self.config.sparql_pass),
+            data=query.encode(),
+            headers={
+                "Content-Type": "application/sparql-update; charset=UTF-8",
+                "Accept": "text/boolean"
+            }
+        )
+        try:
+            response.raise_for_status()
+        except Exception:
+            log.exception("Something went wrong")
+        else:
+            log.info(f"Received response: {response.content}")
+
 
     # input data processing
 
@@ -186,7 +242,7 @@ class DataSetImport:
 
         # initialize graph
         self.graph_uuid = uuid.uuid5(uuid.NAMESPACE_URL, file_namespace)
-        graph_iri = f"{OBJECTS_NAMESPACE}{self.graph_uuid}"
+        graph_iri = f"{self.config.entities_namespace}{self.graph_uuid}"
         graph = self.graph = Graph(identifier=graph_iri)
 
         # describe graph
@@ -220,6 +276,7 @@ class DataSetImport:
         creation_iris = set()
         creation_uuid_ns = uuid.uuid5(uuid.NAMESPACE_URL, self.file_namespace)
         encountered_filenames = set()
+        entities_namespace = self.config.entities_namespace
         graph = self.graph
 
         with self.source_files["images"].open("rt", newline="") as f:
@@ -255,7 +312,7 @@ class DataSetImport:
                 s = URIRef(self.file_namespace + url_quote(filename))
                 media_type = self.config.media_types[Path(filename).suffix[1:]]
                 creation_uuid = uuid.uuid5(creation_uuid_ns, media_type)
-                creation_iri = URIRef(f"{OBJECTS_NAMESPACE}{creation_uuid}")
+                creation_iri = URIRef(f"{entities_namespace}{creation_uuid}")
                 creation_iris.add(
                     (
                         creation_iri,
@@ -358,7 +415,7 @@ class DataSetImport:
                     raise SystemExit(1)
 
                 graph.add((s, RDF.type, m4p0.MuseumObject))
-                graph.add((s, m4p0.MuseumObjectTtile, Literal(row["Bezeichnung"])))
+                graph.add((s, m4p0.MuseumObjectTitle, Literal(row["Bezeichnung"])))
 
                 if "URL" in row:
                     graph.add((s, edm.isShownAt, URIRef(row["URL"])))
@@ -381,4 +438,7 @@ class DataSetImport:
         log.info("Done.")
 
     def create_related_entity_iri(self, identifier: str) -> URIRef:
-        return URIRef(OBJECTS_NAMESPACE + str(uuid.uuid5(self.graph_uuid, identifier)))
+        return URIRef(
+            self.config.entities_namespace
+            + str(uuid.uuid5(self.graph_uuid, identifier))
+        )

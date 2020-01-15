@@ -19,12 +19,15 @@ class ImportSpecValidator(Validator):
 
 import_spec_validator = ImportSpecValidator(
     schema={
+        "entities_namespace": {"type": "string", "regex": WEB_URL_PATTERN + "/$"},
         "import_folders": {"type": "list", "schema": {"coerce": Path, "type": "path"}},
         "media_types": {
             "type": "dict",
             "keysrules": {"type": "string", "regex": "[a-z0-9]+"},
             "valuesrules": {"type": "string", "regex": WEB_URL_PATTERN},
         },
+        "sparql_user": {"type": "string", "empty": False},
+        "sparql_pass": {"type": "string", "empty": False},
         "sparql_endpoint": {"type": "string", "regex": WEB_URL_PATTERN},
         "verbosity": {"type": "integer", "allowed": (logging.DEBUG, logging.INFO)},
     }
