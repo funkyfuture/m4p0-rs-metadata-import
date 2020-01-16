@@ -209,7 +209,7 @@ Für die Medientypen "Audio/Video" zusätzlich:
 
 ```turtle
 GRAPH {graph_iri} {
-  <{data_object_iri}> m4p0_length "{Dauer}" .
+  <{data_object_iri}> m4p0:length "{Dauer}" .
 }
 ```
 
