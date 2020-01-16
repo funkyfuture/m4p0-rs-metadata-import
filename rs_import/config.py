@@ -26,6 +26,7 @@ import_spec_validator = ImportSpecValidator(
             "keysrules": {"type": "string", "regex": "[a-z0-9]+"},
             "valuesrules": {"type": "string", "regex": WEB_URL_PATTERN},
         },
+        "review": {"type": "boolean"},
         "sparql_user": {"type": "string", "required": True, "empty": False},
         "sparql_pass": {"type": "string", "required": True, "empty": False},
         "sparql_endpoint": {"type": "string", "regex": WEB_URL_PATTERN},
@@ -45,6 +46,7 @@ def generate_config() -> Tuple[List[Path], SimpleNamespace]:
         {
             **config_contents,
             "import_folders": cli_args.import_folder,
+            "review": cli_args.review,
             "verbosity": [logging.INFO, logging.DEBUG][cli_args.verbose],
         }
     )
@@ -77,6 +79,11 @@ def parse_cli_args(args: List[str] = sys.argv[1:]) -> Namespace:
         "-v",
         action="store_true",
         help="Increases verbosity to DEBUG level.",
+    )
+    parser.add_argument(
+        "--review",
+        action="store_true",
+        help="Review and confirm the generated SPARQL update before submitting."
     )
     parser.add_argument(
         "import_folder",

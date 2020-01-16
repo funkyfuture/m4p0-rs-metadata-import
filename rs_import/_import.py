@@ -5,6 +5,7 @@ from contextlib import AbstractContextManager
 from datetime import datetime
 from pathlib import Path
 from pprint import pformat
+from pydoc import pager
 from types import SimpleNamespace
 from typing import Dict, Optional
 from urllib.parse import quote as url_quote
@@ -190,6 +191,13 @@ class DataSetImport:
           }}
         }} WHERE {{}}
         """
+
+        if self.config.review:
+            pager(insert_query)
+            review_passed = input("Proceed? [yN]: ").lower()
+            if not review_passed or review_passed[0] != "y":
+                log.critical("User aborted after reviewing the SPARQL query.")
+                raise SystemExit(1)
 
         log.debug("Generated SPARQL Query:")
         log.debug(insert_query)
