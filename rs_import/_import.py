@@ -218,8 +218,7 @@ class DataSetImport:
         except Exception:
             log.exception("Something went wrong")
         else:
-            log.info(f"Received response: {response.content}")
-
+            log.info(f"Received response: {response.content.decode()}")
 
     # input data processing
 
@@ -310,6 +309,10 @@ class DataSetImport:
                 encountered_filenames.add(filename)
 
                 s = URIRef(self.file_namespace + url_quote(filename))
+                if not httpx.head(s).status_code == 200:
+                    log.error(f"The resource at {s} is not available.")
+                    raise SystemExit(1)
+
                 media_type = self.config.media_types[Path(filename).suffix[1:]]
                 creation_uuid = uuid.uuid5(creation_uuid_ns, media_type)
                 creation_iri = URIRef(f"{entities_namespace}{creation_uuid}")
