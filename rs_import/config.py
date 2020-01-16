@@ -26,8 +26,8 @@ import_spec_validator = ImportSpecValidator(
             "keysrules": {"type": "string", "regex": "[a-z0-9]+"},
             "valuesrules": {"type": "string", "regex": WEB_URL_PATTERN},
         },
-        "sparql_user": {"type": "string", "empty": False},
-        "sparql_pass": {"type": "string", "empty": False},
+        "sparql_user": {"type": "string", "required": True, "empty": False},
+        "sparql_pass": {"type": "string", "required": True, "empty": False},
         "sparql_endpoint": {"type": "string", "regex": WEB_URL_PATTERN},
         "verbosity": {"type": "integer", "allowed": (logging.DEBUG, logging.INFO)},
     }
