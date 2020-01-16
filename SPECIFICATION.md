@@ -176,10 +176,17 @@ Je distinkter `creation_iri` werden folgende Tripel erzeugt:
 GRAPH {graph_iri} {
   <{creation_iri}>
     a crm:E65_Creation ;
-    rdf:label "{data_provider} / {file_namespace} / {media_type}" ;
+    m4p0:hasCreationPhase <https://www.museum4punkt0.de/catalogue/ontology/MaterialProduction> ;
+    m4p0:hasCreationMethod <{creation_method_concept_iri}> .
+}
+```
 
-    # optional:
-    m4p0:fallsWithinAppCreation <{digital_app_creation}> .
+```turtle
+GRAPH {graph_iri} {
+    <{creation_method_concept_iri}>
+    a skos:Concept ;
+    skos:prefLabel "Digitalisierung"@de ;
+    skos:inScheme <https://www.museum4punkt0.de/catalogue/ontology/CreationMethod>.
 }
 ```
 
@@ -255,7 +262,8 @@ Je Zeile werden folgende Tripel erzeugt:
 GRAPH {graph_iri} {
   <{Bezugsentität_iri}>
     a m4p0:MuseumObject ;
-    m4p0:museumObjectTitle "{Bezeichnung}".
+    m4p0:museumObjectTitle "{Bezeichnung}";
+    rdfs:label "{Bezeichnung}".
 
     # jeweils optional:
     edm:isShownAt "{URL}";
