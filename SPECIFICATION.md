@@ -177,7 +177,10 @@ GRAPH {graph_iri} {
   <{creation_iri}>
     a crm:E65_Creation ;
     m4p0:hasCreationPhase <https://www.museum4punkt0.de/catalogue/ontology/MaterialProduction> ;
-    m4p0:hasCreationMethod <{creation_method_concept_iri}> .
+    m4p0:hasCreationMethod <https://www.museum4punkt0.de/catalogue/ontology/Digitisation> .
+    <https://www.museum4punkt0.de/catalogue/ontology/Digitization> a skos:Concept ;
+    skos:inScheme  <https://www.museum4punkt0.de/catalogue/ontology/CreationMethod> ;
+    skos:prefLabel "Digitalisierung"@de .
 }
 ```
 
