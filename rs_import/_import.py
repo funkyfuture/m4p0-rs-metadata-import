@@ -39,7 +39,6 @@ dataset_description_schema = {
         "regex": WEB_URL_PATTERN + "/$",
     },
     "data_provider": {"type": "string", "required": True, "regex": WEB_URL_PATTERN},
-    "digital_app": {"type": "string", "regex": WEB_URL_PATTERN},
 }
 
 
@@ -145,7 +144,6 @@ class DataSetImport:
             raise SystemExit(1)
 
         self.graph: Optional[Graph] = None
-        self.digital_app_creation: Optional[URIRef] = None
 
     def run(self):
         # generate triples from the various sources
@@ -262,18 +260,6 @@ class DataSetImport:
         ]:
             graph.add((s, p, o))
 
-        digital_app = input_data.get("digital_app")
-        if digital_app is not None:
-            digital_app = URIRef(digital_app)
-            digital_app_creation = self.digital_app_creation = URIRef(
-                f"{digital_app}#creation"
-            )
-
-            graph.add((digital_app, RDF.type, m4p0.DigitalApp))
-            graph.add((digital_app_creation, RDF.type, crm.E65_Creation))
-
-            graph.add((digital_app_creation, m4p0.hasCreatedDigitalApp, digital_app))
-
     def process_images_data(self):
         if self.source_files.get("images") is None:
             log.debug("No images' metadata found.")
@@ -371,14 +357,8 @@ class DataSetImport:
         for creation_iri, label in creation_iris:
             graph.add((creation_iri, RDF.type, crm.E65_Creation))
             graph.add((creation_iri, RDFS.label, Literal(label)))
-            if self.digital_app_creation is not None:
-                graph.add(
-                    (
-                        creation_iri,
-                        m4p0.fallsWithinAppCreation,
-                        self.digital_app_creation,
-                    )
-                )
+            graph.add((creation_iri, m4p0.hasCreationPhase, m4p0.MaterialProduction))
+            graph.add((creation_iri, m4p0.hasCreationMethod, m4p0.Digitisation))
 
         log.info("Done.")
 
@@ -425,8 +405,10 @@ class DataSetImport:
                     )
                     raise SystemExit(1)
 
+                label = Literal(row["Bezeichnung"])
                 graph.add((s, RDF.type, m4p0.MuseumObject))
-                graph.add((s, m4p0.museumObjectTitle, Literal(row["Bezeichnung"])))
+                graph.add((s, m4p0.museumObjectTitle, label))
+                graph.add((s, RDFS.label, label))
 
                 if "URL" in row:
                     graph.add((s, edm.isShownAt, URIRef(row["URL"])))

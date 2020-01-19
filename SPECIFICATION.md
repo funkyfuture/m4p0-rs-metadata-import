@@ -91,15 +91,11 @@ Feldern:
     jedoch nach Media Types differenziert wird, gebraucht
 - `data_provider` (obligatorisch)
   - IRI der liefernden Institution
-- `digital_app` (optional)
-  - die IRI der zuvor in RS angelegten Instanz der Klasse `m4p0:DigitalApp`
 
 Diese Tabelle wird nicht von den liefernden Institutionen erstellt.
 
 Derivierte Werte:
 
-- `digital_app_creation` <- `crm:E65_Creation`-instanz via
-  `m4p0:hasCreatedDigitalApp` von `{digital_app}` (optional)
 - `graph_uuid` <- `uuid({file_namespace})`
 - `graph_iri` <- `https://enter.museum4punkt0.de/resource/{graph_uuid}`
 - `import_time` <- aktuelle Zeit als `xsd:dateTime`
