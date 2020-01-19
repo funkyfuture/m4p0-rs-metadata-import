@@ -178,18 +178,6 @@ GRAPH {graph_iri} {
     a crm:E65_Creation ;
     m4p0:hasCreationPhase <https://www.museum4punkt0.de/catalogue/ontology/MaterialProduction> ;
     m4p0:hasCreationMethod <https://www.museum4punkt0.de/catalogue/ontology/Digitisation> .
-    <https://www.museum4punkt0.de/catalogue/ontology/Digitization> a skos:Concept ;
-    skos:inScheme  <https://www.museum4punkt0.de/catalogue/ontology/CreationMethod> ;
-    skos:prefLabel "Digitalisierung"@de .
-}
-```
-
-```turtle
-GRAPH {graph_iri} {
-    <{creation_method_concept_iri}>
-    a skos:Concept ;
-    skos:prefLabel "Digitalisierung"@de ;
-    skos:inScheme <https://www.museum4punkt0.de/catalogue/ontology/CreationMethod>.
 }
 ```
 
