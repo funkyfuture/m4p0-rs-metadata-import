@@ -23,11 +23,11 @@ from rs_import.constants import WEB_URL_PATTERN
 # URI namespaces
 
 crm = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
-crmdig = Namespace("http://www.ics.forth.gr/isl/rdfs/3D-COFORM_CRMdig.rdfs#")
+crmdig = Namespace("http://www.ics.forth.gr/isl/CRMdig/")
 dc = Namespace("http://purl.org/dc/elements/1.1/")
 dcterms = Namespace("http://purl.org/dc/terms/")
 edm = Namespace("http://www.europeana.eu/schemas/edm/")
-m4p0 = Namespace("https://enter.museum4punkt0.de/ontology/")
+m4p0 = Namespace("https://www.museum4punkt0.de/catalogue/ontology/")
 
 
 # validation schemas
