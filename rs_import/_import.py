@@ -165,7 +165,8 @@ class DataSetImport:
         graph_iri = self.graph.identifier
 
         turtle_representation: str = self.graph.serialize(
-            format="turtle").decode().splitlines()
+            format="turtle"
+        ).decode().splitlines()
 
         deletion_query = f"""\
         DELETE {{?s ?p ?o}}
@@ -180,7 +181,7 @@ class DataSetImport:
                 break
 
         prefixes_header = "\n".join(prefixes) + "\n"
-        statements = "\n".join(turtle_representation[i+1:])
+        statements = "\n".join(turtle_representation[i + 1 :])
 
         insert_query = f"""\
         {prefixes_header}
@@ -218,8 +219,8 @@ class DataSetImport:
             data=query.encode(),
             headers={
                 "Content-Type": "application/sparql-update; charset=UTF-8",
-                "Accept": "text/boolean"
-            }
+                "Accept": "text/boolean",
+            },
         )
         try:
             response.raise_for_status()

@@ -82,7 +82,7 @@ def parse_cli_args(args: List[str] = sys.argv[1:]) -> Namespace:
     parser.add_argument(
         "--review",
         action="store_true",
-        help="Review and confirm the generated SPARQL update before submitting."
+        help="Review and confirm the generated SPARQL update before submitting.",
     )
     parser.add_argument(
         "import_folder",
