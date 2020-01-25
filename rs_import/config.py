@@ -19,7 +19,6 @@ class ImportSpecValidator(Validator):
 
 import_spec_validator = ImportSpecValidator(
     schema={
-        "entities_namespace": {"type": "string", "regex": WEB_URL_PATTERN + "/$"},
         "import_folders": {"type": "list", "schema": {"coerce": Path, "type": "path"}},
         "media_types": {
             "type": "dict",

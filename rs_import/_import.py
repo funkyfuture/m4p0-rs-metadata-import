@@ -22,6 +22,8 @@ from rs_import.constants import WEB_URL_PATTERN
 
 # URI namespaces
 
+ENTITIES_NAMESPACE = "https://enter.museum4punkt0.de/resource/"
+
 crm = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
 crmdig = Namespace("http://www.ics.forth.gr/isl/CRMdig/")
 dc = Namespace("http://purl.org/dc/elements/1.1/")
@@ -247,7 +249,7 @@ class DataSetImport:
 
         # initialize graph
         self.graph_uuid = uuid.uuid5(uuid.NAMESPACE_URL, file_namespace)
-        graph_iri = f"{self.config.entities_namespace}{self.graph_uuid}"
+        graph_iri = f"{ENTITIES_NAMESPACE}{self.graph_uuid}"
         graph = self.graph = Graph(identifier=graph_iri)
 
         # describe graph
@@ -269,7 +271,6 @@ class DataSetImport:
         creation_iris = set()
         creation_uuid_ns = uuid.uuid5(uuid.NAMESPACE_URL, self.file_namespace)
         encountered_filenames = set()
-        entities_namespace = self.config.entities_namespace
         graph = self.graph
 
         with self.source_files["images"].open("rt", newline="") as f:
@@ -309,7 +310,7 @@ class DataSetImport:
 
                 media_type = self.config.media_types[Path(filename).suffix[1:]]
                 creation_uuid = uuid.uuid5(creation_uuid_ns, media_type)
-                creation_iri = URIRef(f"{entities_namespace}{creation_uuid}")
+                creation_iri = URIRef(f"{ENTITIES_NAMESPACE}{creation_uuid}")
                 creation_iris.add(
                     (
                         creation_iri,
@@ -431,7 +432,4 @@ class DataSetImport:
         log.info("Done.")
 
     def create_related_entity_iri(self, identifier: str) -> URIRef:
-        return URIRef(
-            self.config.entities_namespace
-            + str(uuid.uuid5(self.graph_uuid, identifier))
-        )
+        return URIRef(f"{ENTITIES_NAMESPACE}{uuid.uuid5(self.graph_uuid, identifier)}")
