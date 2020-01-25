@@ -64,14 +64,17 @@ def parse_cli_args(args: List[str] = sys.argv[1:]) -> Namespace:
     parser = ArgumentParser(
         description="This tool takes the contents of the specified import folders, "
         "transforms them into SPARQL statements and submits these to a SPARQL "
-        "endpoint. Please refer to the supplied specification and usage documentation "
-        "for details."
+        "endpoint. "
+        "A detailed log file will always be stored in a folder `logs` within each "
+        "import folder. "
+        "Please refer to the supplied usage documentation and specification "
+        "for more details."
     )
     parser.add_argument(
         "--config",
         default="~/.rs-import.yml",
         metavar="PATH",
-        help="The path to the configuration file.",
+        help="The path to the configuration file. Default: ~/.rs-import.yml",
     )
     parser.add_argument(
         "--verbose",

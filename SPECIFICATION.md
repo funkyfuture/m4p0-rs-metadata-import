@@ -22,19 +22,6 @@ enthalten.
 In den Datensets werden im Grundsatz Freitextangaben erwartet.
 
 
-## Roadmap
-
-- [ ] dieses Dokument finalisieren
-  - [ ] Mappings der Felder / Spalten zur Ontologie
-  - [ ] Spaltennamen
-- [ ] zwei, drei kleine Beispieldatensätze von Bekanntem ableiten oder selbst
-  erstellen
-- [ ] ein Digest daraus destillieren, das es Institutionen ermöglicht konforme
-  Datensets anzulegen
-- [ ] umfangreichere Testdatensätze, auch fehlerhafte, erstellen
-- [ ] Importroutine implementieren und in das ResearchSpace-Setup integrieren
-
-
 ## Workflow
 
 - Dateien und Metadaten sind von Teilnehmenden geliefert worden
@@ -50,9 +37,7 @@ In den Datensets werden im Grundsatz Freitextangaben erwartet.
 ## Anforderungen an das Verhalten der Importroutine
 
 - Fehler bei der Validierung führen zum Abbruch eines Imports
-- Fehler beim Einspielen der generierten Tripel lassen den Vorgang abbrechen,
-  bisherige Änderungen in der Datenbank rückgängig machen und ggf. gelöschte
-  Daten wiederherstellen
+- Fehler beim Einspielen der generierten Tripel lassen den Vorgang abbrechen
 - Der gesamte Vorgang wird detailliert geloggt und in einer Log-Datei je
   Import bereit gestellt
 - Datensets sind wie im Weiteren definiert eindeutig identifizierbar, ein
