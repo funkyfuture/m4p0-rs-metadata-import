@@ -150,3 +150,19 @@ normalize filename extensions to be lower case. E.g. `image.TIFF` becomes
 
 Imports can be re-done. Any previously imported metadata for the specified
 `file_namespace` is deleted.
+
+## Genesis, credits, license and re-use
+
+This tool is part of the project museum4punkt0 - Digital Strategies for the
+Museum of the Future. Further information: https://www.museum4punkt0.de/en/
+
+It has been developed by Martin Wagner on behalf of the Stiftung Preußischer
+Kulturbesitz.
+
+The project museum4punkt0 is funded by the Federal Government Commissioner
+for Culture and the Media in accordance with a resolution issued by the German
+Bundestag (Parliament of the Federal Republic of Germany).
+
+The contents of this repository are licensed under the terms of
+[GNU Affero General Public License v3](https://www.gnu.org/licenses/agpl-3.0.en.html).
+See [LICENSE.md](./LICENSE.md).
