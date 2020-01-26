@@ -226,6 +226,7 @@ class DataSetImport:
             response.raise_for_status()
         except Exception:
             log.exception("Something went wrong")
+            raise SystemExit(1)
         else:
             log.info(f"Received response: {response.content.decode()}")
 
