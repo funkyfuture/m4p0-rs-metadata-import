@@ -28,4 +28,4 @@ def test_imagset_and_entities(test_config, test_data):
         isinstance(json.loads(x), dict) for x in result.objects(None, m4p0.jsonData)
     )
 
-    assert len(result) == 8 + 18 * 7 + 12 * 6
+    assert len(result) == 7 + 18 * 7 + 12 * 6

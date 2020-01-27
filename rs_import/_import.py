@@ -7,7 +7,7 @@ from pathlib import Path
 from pprint import pformat
 from pydoc import pager
 from types import SimpleNamespace
-from typing import Dict, Optional
+from typing import Dict, Optional, Set
 from urllib.parse import quote as url_quote
 
 import httpx
@@ -146,13 +146,24 @@ class DataSetImport:
             raise SystemExit(1)
 
         self.graph: Optional[Graph] = None
+        self.creation_iris: Set[URIRef] = set()
+        self.creation_uuid_ns: Optional[uuid.UUID] = None
+        self.encountered_filenames: Set[str] = set()
 
     def run(self):
         # generate triples from the various sources
         self.process_dataset_description()
+
         self.process_images_data()
         self.process_audio_video_data()
         self.process_3d_data()
+
+        graph = self.graph
+        for creation_iri in self.creation_iris:
+            graph.add((creation_iri, RDF.type, crm.E65_Creation))
+            graph.add((creation_iri, m4p0.hasCreationPhase, m4p0.MaterialProduction))
+            graph.add((creation_iri, m4p0.hasCreationMethod, m4p0.Digitisation))
+
         self.process_entities_data()
 
         self.submit()
@@ -248,6 +259,7 @@ class DataSetImport:
 
         self.data_provider = URIRef(input_data["data_provider"])
         self.file_namespace = file_namespace = input_data["file_namespace"]
+        self.creation_uuid_ns = uuid.uuid5(uuid.NAMESPACE_URL, self.file_namespace)
 
         # initialize graph
         self.graph_uuid = uuid.uuid5(uuid.NAMESPACE_URL, file_namespace)
@@ -270,99 +282,9 @@ class DataSetImport:
             return
         log.info("# Processing images' metadata.")
 
-        creation_iris = set()
-        creation_uuid_ns = uuid.uuid5(uuid.NAMESPACE_URL, self.file_namespace)
-        encountered_filenames = set()
-        graph = self.graph
-
-        with self.source_files["images"].open("rt", newline="") as f:
-            csv_reader = csv.DictReader(f)
-            for row in csv_reader:
-
-                normalized_row = {}
-                # remove * indicator and drop empty fields
-                for name, value in row.items():
-                    if not value.strip():
-                        continue
-                    if name.endswith("*"):
-                        name = name[:-1]
-                    normalized_row[name] = value
-
-                object_data = coreset_validator.validated(normalized_row)
-                filename = object_data.get("Dateiname", "<missing>")
-                if coreset_validator.errors:
-                    log.error(
-                        "An image metadata set did not validate. These errors "
-                        f"were reported for the file {filename}:"
-                    )
-                    log.error(pformat(coreset_validator.errors))
-
-                # TODO check URL if configured
-
-                if filename in encountered_filenames:
-                    log.error(f"Encountered redundant filename: {filename}")
-                    log.critical("Aborting")
-                    raise SystemExit(1)
-                encountered_filenames.add(filename)
-
-                s = URIRef(self.file_namespace + url_quote(filename))
-                if not httpx.head(s).status_code == 200:
-                    log.error(f"The resource at {s} is not available.")
-                    raise SystemExit(1)
-
-                media_type = self.config.media_types[Path(filename).suffix[1:]]
-                creation_uuid = uuid.uuid5(creation_uuid_ns, media_type)
-                creation_iri = URIRef(f"{ENTITIES_NAMESPACE}{creation_uuid}")
-                creation_iris.add(
-                    (
-                        creation_iri,
-                        f"{self.data_provider} / {self.file_namespace} / {media_type}",
-                    )
-                )
-
-                for p, o in [
-                    (RDF.type, crmdig["D1.Digital_Object"]),
-                    (m4p0.fileName, Literal(filename)),
-                    (edm.dataProvider, self.data_provider),
-                    (m4p0.hasMediaType, URIRef(media_type)),
-                    (crm.P94i_was_created_by, creation_iri,),
-                ]:
-                    graph.add((s, p, o))
-
-                if "Rechtehinweis" in object_data:
-                    graph.add((s, dc.rights, Literal(object_data["Rechtehinweis"])))
-                elif "Lizenz" in object_data:
-                    graph.add((s, dcterms.license, URIRef(object_data["Lizenz"])))
-                    graph.add((s, m4p0.licensor, Literal(object_data["Lizenzgeber"])))
-                else:
-                    raise AssertionError
-
-                if "Bezugsentität" in object_data:
-                    graph.add(
-                        (
-                            s,
-                            m4p0.refersToMuseumObject,
-                            self.create_related_entity_iri(
-                                object_data["Bezugsentität"]
-                            ),
-                        )
-                    )
-
-                if "URL" in object_data:
-                    graph.add(
-                        (
-                            s,
-                            edm.shownAt,
-                            Literal(object_data["url"], datatype=XSD.anyURI),
-                        )
-                    )
-
-        for creation_iri, label in creation_iris:
-            graph.add((creation_iri, RDF.type, crm.E65_Creation))
-            graph.add((creation_iri, RDFS.label, Literal(label)))
-            graph.add((creation_iri, m4p0.hasCreationPhase, m4p0.MaterialProduction))
-            graph.add((creation_iri, m4p0.hasCreationMethod, m4p0.Digitisation))
-
+        self.process_metadata_file(
+            self.source_files["images"], self.add_core_fields, coreset_validator
+        )
         log.info("Done.")
 
     def process_audio_video_data(self):
@@ -376,6 +298,76 @@ class DataSetImport:
             log.debug("No 3D objects' metadata found.")
             return
         log.info("# Processing 3D objects' metadata.")
+
+    def process_metadata_file(self, source_file, add_method, validator):
+        with source_file.open("rt", newline="") as f:
+            csv_reader = csv.DictReader(f)
+            for row in csv_reader:
+
+                normalized_row = {}
+                # remove * indicator and drop empty fields
+                for name, value in row.items():
+                    if not value.strip():
+                        continue
+                    if name.endswith("*"):
+                        name = name[:-1]
+                    normalized_row[name] = value
+
+                object_data = validator.validated(normalized_row)
+                filename = object_data.get("Dateiname", "<missing>")
+                if coreset_validator.errors:
+                    log.error(
+                        "A digital object metadata set did not validate. These errors "
+                        f"were reported for the file {filename}:"
+                    )
+                    log.error(pformat(coreset_validator.errors))
+
+                if filename in self.encountered_filenames:
+                    log.error(f"Encountered redundant filename: {filename}")
+                    log.critical("Aborting.")
+                    raise SystemExit(1)
+                self.encountered_filenames.add(filename)
+
+                add_method(filename, object_data)
+
+    def add_core_fields(self, filename, object_data):
+        graph = self.graph
+        s = URIRef(self.file_namespace + url_quote(filename))
+        if not httpx.head(s).status_code == 200:
+            log.error(f"The resource at {s} is not available.")
+            raise SystemExit(1)
+        media_type = self.config.media_types[Path(filename).suffix[1:]]
+        creation_uuid = uuid.uuid5(self.creation_uuid_ns, media_type)
+        creation_iri = URIRef(f"{ENTITIES_NAMESPACE}{creation_uuid}")
+        self.creation_iris.add(creation_iri)
+
+        for p, o in [
+            (RDF.type, crmdig["D1.Digital_Object"]),
+            (m4p0.fileName, Literal(filename)),
+            (edm.dataProvider, self.data_provider),
+            (m4p0.hasMediaType, URIRef(media_type)),
+            (crm.P94i_was_created_by, creation_iri,),
+        ]:
+            graph.add((s, p, o))
+        if "Rechtehinweis" in object_data:
+            graph.add((s, dc.rights, Literal(object_data["Rechtehinweis"])))
+        elif "Lizenz" in object_data:
+            graph.add((s, dcterms.license, URIRef(object_data["Lizenz"])))
+            graph.add((s, m4p0.licensor, Literal(object_data["Lizenzgeber"])))
+        else:
+            raise AssertionError
+        if "Bezugsentität" in object_data:
+            graph.add(
+                (
+                    s,
+                    m4p0.refersToMuseumObject,
+                    self.create_related_entity_iri(object_data["Bezugsentität"]),
+                )
+            )
+        if "URL" in object_data:
+            graph.add(
+                (s, edm.shownAt, Literal(object_data["url"], datatype=XSD.anyURI),)
+            )
 
     def process_entities_data(self):
         if self.source_files.get("entities") is None:
