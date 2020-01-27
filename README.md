@@ -4,7 +4,7 @@
 objects provided as csv-file(s), generates RDF triples and submits these to the
 [ResearchSpace](https://www.researchspace.org/) instance available at
 https://enter.museum4punkt0.de/. The generated data conforms with the
-[project's documentation ontology](https://github.com/fdiehr/enter-ontology),
+[project's documentation ontology](https://github.com/museum4punkt0/enter-ontology),
 while the mapping of csv to RDF data is documented in
 [a supplemental document](./SPECIFICATION.md) in the tool's sources.
 
