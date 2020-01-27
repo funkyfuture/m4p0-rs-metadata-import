@@ -78,7 +78,7 @@ coreset_description_schema = {
 
 video_audio_description_schema = {
     **coreset_description_schema,
-    # TODO
+    "Dauer": {"type": "string", "regex": r"^\d\d:\d\d:\d\d$"}
 }
 
 _3d_description_schema = {
@@ -94,6 +94,7 @@ entity_description_schema = {
 
 dataset_description_validator = Validator(dataset_description_schema)
 coreset_validator = Validator(coreset_description_schema)
+audio_video_validator = Validator(video_audio_description_schema)
 entity_validator = Validator(
     entity_description_schema, allow_unknown={"type": "string"}
 )
@@ -277,21 +278,27 @@ class DataSetImport:
             graph.add((s, p, o))
 
     def process_images_data(self):
-        if self.source_files.get("images") is None:
+        source_file = self.source_files.get("images")
+        if source_file is None:
             log.debug("No images' metadata found.")
             return
         log.info("# Processing images' metadata.")
 
         self.process_metadata_file(
-            self.source_files["images"], self.add_core_fields, coreset_validator
+            source_file, self.add_core_fields, coreset_validator
         )
         log.info("Done.")
 
     def process_audio_video_data(self):
-        if self.source_files.get("audio_video") is None:
-            log.debug("No audios' metadata found.")
+        source_file = self.source_files.get("audio_video")
+        if source_file is None:
+            log.debug("No audios' or videos' metadata found.")
             return
-        log.info("# Processing audios' metadata")
+        log.info("# Processing audios' and videos' metadata")
+
+        self.process_metadata_file(source_file, self.add_audio_video_fields, audio_video_validator)
+
+        log.info("Done.")
 
     def process_3d_data(self):
         if self.source_files.get("3d") is None:
@@ -328,11 +335,11 @@ class DataSetImport:
                     raise SystemExit(1)
                 self.encountered_filenames.add(filename)
 
-                add_method(filename, object_data)
+                add_method(URIRef(self.file_namespace + url_quote(filename)),
+                           filename, object_data)
 
-    def add_core_fields(self, filename, object_data):
+    def add_core_fields(self, s, filename, object_data):
         graph = self.graph
-        s = URIRef(self.file_namespace + url_quote(filename))
         if not httpx.head(s).status_code == 200:
             log.error(f"The resource at {s} is not available.")
             raise SystemExit(1)
@@ -368,6 +375,10 @@ class DataSetImport:
             graph.add(
                 (s, edm.shownAt, Literal(object_data["url"], datatype=XSD.anyURI),)
             )
+
+    def add_audio_video_fields(self, s, filename, object_data):
+        self.add_core_fields(s, filename, object_data)
+        self.graph.add((s, m4p0.length, Literal(object_data["Dauer"])))
 
     def process_entities_data(self):
         if self.source_files.get("entities") is None:
