@@ -1,6 +1,10 @@
-# Überschrift
+# Mapping tabellarisch erfasster Daten zu RDF statements 
 
-Präambel
+Dieses Dokument beschreibt Ein- und daraus derivierte Ausgabedaten, die im
+Rahmen der Ergebnisdokumentation des Projektes [museum4punkt0](https://museum4punkt0.de/)
+erfasst wurden. Diese Spezifikation umfasst den Bereich der entstandenen
+Digitalisate und hat präskriptiv-normativen Charakter für Implementierungen von
+diesbezüglichen Applikationen.
 
 ## Nomenklatur und Konventionen
 
