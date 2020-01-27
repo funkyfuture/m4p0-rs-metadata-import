@@ -77,13 +77,30 @@ coreset_description_schema = {
 }
 
 video_audio_description_schema = {
-    **coreset_description_schema,
-    "Dauer": {"type": "string", "regex": r"^\d\d:\d\d:\d\d$"}
+    **coreset_description_schema,  # type: ignore
+    "Dauer": {"type": "string", "regex": r"^\d\d:\d\d:\d\d$"},
 }
 
 _3d_description_schema = {
     **coreset_description_schema,
-    # TODO
+    "3D-Dateityp": {"type": "string"},
+    "Geometrieart": {
+        "type": "string",
+        "allowed": {
+            "Punktewolke",
+            "Polygonmesh",
+            "Flächenmodell (NURBS, CAD)",
+            "CT-Daten",
+        },
+    },
+    "Geometrieauflösung": {
+        "type": "string",
+        "required": True,
+        "allowed": ("low", "mid", "high"),
+    },
+    "Texturen": {"type": "string"},
+    "Vertexfarben": {"type": "string", "allowed": ("ja", "nein")},
+    "Vorschaubild": {"type": "string", "required": True, "empty": False},
 }
 
 entity_description_schema = {
@@ -95,6 +112,7 @@ entity_description_schema = {
 dataset_description_validator = Validator(dataset_description_schema)
 coreset_validator = Validator(coreset_description_schema)
 audio_video_validator = Validator(video_audio_description_schema)
+_3d_validator = Validator(_3d_description_schema)
 entity_validator = Validator(
     entity_description_schema, allow_unknown={"type": "string"}
 )
@@ -282,11 +300,9 @@ class DataSetImport:
         if source_file is None:
             log.debug("No images' metadata found.")
             return
-        log.info("# Processing images' metadata.")
 
-        self.process_metadata_file(
-            source_file, self.add_core_fields, coreset_validator
-        )
+        log.info("# Processing images' metadata.")
+        self.process_metadata_file(source_file, self.add_core_fields, coreset_validator)
         log.info("Done.")
 
     def process_audio_video_data(self):
@@ -294,17 +310,22 @@ class DataSetImport:
         if source_file is None:
             log.debug("No audios' or videos' metadata found.")
             return
+
         log.info("# Processing audios' and videos' metadata")
-
-        self.process_metadata_file(source_file, self.add_audio_video_fields, audio_video_validator)
-
+        self.process_metadata_file(
+            source_file, self.add_audio_video_fields, audio_video_validator
+        )
         log.info("Done.")
 
     def process_3d_data(self):
-        if self.source_files.get("3d") is None:
+        source_file = self.source_files.get("3d")
+        if source_file is None:
             log.debug("No 3D objects' metadata found.")
             return
+
         log.info("# Processing 3D objects' metadata.")
+        self.process_metadata_file(source_file, self.add_3d_fields, _3d_validator)
+        log.info("Done.")
 
     def process_metadata_file(self, source_file, add_method, validator):
         with source_file.open("rt", newline="") as f:
@@ -335,8 +356,11 @@ class DataSetImport:
                     raise SystemExit(1)
                 self.encountered_filenames.add(filename)
 
-                add_method(URIRef(self.file_namespace + url_quote(filename)),
-                           filename, object_data)
+                add_method(
+                    URIRef(self.file_namespace + url_quote(filename)),
+                    filename,
+                    object_data,
+                )
 
     def add_core_fields(self, s, filename, object_data):
         graph = self.graph
@@ -379,6 +403,33 @@ class DataSetImport:
     def add_audio_video_fields(self, s, filename, object_data):
         self.add_core_fields(s, filename, object_data)
         self.graph.add((s, m4p0.length, Literal(object_data["Dauer"])))
+
+    def add_3d_fields(self, s, filename, object_data):
+        self.add_core_fields(s, filename, object_data)
+
+        graph = self.graph
+
+        graph.add((s, m4p0.fileNameOfThumbnail, Literal(object_data["Vorschaubild"])))
+
+        geometrieart = object_data.get("Geometrieart")
+        if geometrieart:
+            graph.add((s, m4p0.geometryType, Literal(geometrieart)))
+
+        dateityp = object_data.get("3D-Dateityp")
+        if dateityp:
+            graph.add((s, m4p0.fileType, Literal(dateityp)))
+
+        graph.add(
+            (s, m4p0.qualityOfGeometryRes, m4p0[object_data["Geometrieauflösung"]])
+        )
+
+        vertexfarben = object_data.get("Vertexfarben")
+        if vertexfarben:
+            graph.add((s, m4p0.vertexColour, Literal(vertexfarben)))
+
+        texturen = object_data.get("Texturen")
+        if texturen:
+            graph.add((s, m4p0.textureType, Literal(texturen)))
 
     def process_entities_data(self):
         if self.source_files.get("entities") is None:
