@@ -17,7 +17,7 @@ def test_valid_dataset(test_config, test_data):
 
     graph_iri = result.value(
         predicate=RDF.type,
-        object=URIRef("https://enter.museum4punkt0.de/ontology/RDFGraph"),
+        object=URIRef("https://www.museum4punkt0.de/catalogue/ontology/RDFGraph"),
     )
     assert (graph_iri, RDF.type, m4p0.RDFGraph) in result
     assert re.match(

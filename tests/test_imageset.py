@@ -6,8 +6,8 @@ from rdflib.namespace import RDF
 from tests import _TestDataSetImport
 
 
-crmdig = Namespace("http://www.ics.forth.gr/isl/rdfs/3D-COFORM_CRMdig.rdfs#")
-m4p0 = Namespace("https://enter.museum4punkt0.de/ontology/")
+crmdig = Namespace("http://www.ics.forth.gr/isl/CRMdig/")
+m4p0 = Namespace("https://www.museum4punkt0.de/catalogue/ontology/")
 
 
 def test_imagset_and_entities(test_config, test_data):

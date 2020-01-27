@@ -181,7 +181,7 @@ class DataSetImport:
                 break
 
         prefixes_header = "\n".join(prefixes) + "\n"
-        statements = "\n".join(turtle_representation[i + 1 :])
+        statements = "\n".join(turtle_representation[i + 1 :])  # noqa: E203
 
         insert_query = f"""\
         {prefixes_header}
